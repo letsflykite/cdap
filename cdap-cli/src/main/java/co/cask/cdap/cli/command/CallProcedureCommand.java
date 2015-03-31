@@ -23,6 +23,7 @@ import co.cask.cdap.cli.CommandCategory;
 import co.cask.cdap.cli.ElementType;
 import co.cask.cdap.cli.exception.CommandInputError;
 import co.cask.cdap.cli.util.AbstractAuthCommand;
+import co.cask.cdap.cli.util.Grammar;
 import co.cask.cdap.client.ProcedureClient;
 import co.cask.common.cli.Arguments;
 import com.google.common.collect.Maps;
@@ -76,7 +77,7 @@ public class CallProcedureCommand extends AbstractAuthCommand implements Categor
 
   @Override
   public String getDescription() {
-    return String.format("Calls a %s.", ElementType.PROCEDURE.getPrettyName());
+    return String.format("Calls %s.", Grammar.a(ElementType.PROCEDURE.getPrettyName()));
   }
 
   @Override

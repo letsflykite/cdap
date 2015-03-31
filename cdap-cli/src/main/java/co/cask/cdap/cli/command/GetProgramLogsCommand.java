@@ -21,6 +21,7 @@ import co.cask.cdap.cli.CLIConfig;
 import co.cask.cdap.cli.ElementType;
 import co.cask.cdap.cli.exception.CommandInputError;
 import co.cask.cdap.cli.util.AbstractAuthCommand;
+import co.cask.cdap.cli.util.Grammar;
 import co.cask.cdap.client.ProgramClient;
 import co.cask.common.cli.Arguments;
 
@@ -76,6 +77,6 @@ public class GetProgramLogsCommand extends AbstractAuthCommand {
 
   @Override
   public String getDescription() {
-    return String.format("Gets the logs of a %s.", elementType.getPrettyName());
+    return String.format("Gets the logs of %s.", Grammar.a(elementType.getPrettyName()));
   }
 }

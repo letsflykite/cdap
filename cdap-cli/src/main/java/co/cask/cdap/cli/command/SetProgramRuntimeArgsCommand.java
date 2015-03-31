@@ -21,6 +21,7 @@ import co.cask.cdap.cli.CLIConfig;
 import co.cask.cdap.cli.ElementType;
 import co.cask.cdap.cli.util.AbstractAuthCommand;
 import co.cask.cdap.cli.util.ArgumentParser;
+import co.cask.cdap.cli.util.Grammar;
 import co.cask.cdap.client.ProgramClient;
 import co.cask.common.cli.Arguments;
 import com.google.gson.Gson;
@@ -64,7 +65,7 @@ public class SetProgramRuntimeArgsCommand extends AbstractAuthCommand {
 
   @Override
   public String getDescription() {
-    return "Sets the runtime arguments of a " + elementType.getPrettyName() + "." +
+    return "Sets the runtime arguments of " + Grammar.a(elementType.getPrettyName()) + "." +
       " <" + ArgumentName.RUNTIME_ARGS + "> is specified in the format \"key1=a key2=b\".";
   }
 }

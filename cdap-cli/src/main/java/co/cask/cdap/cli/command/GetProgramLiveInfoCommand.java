@@ -20,6 +20,7 @@ import co.cask.cdap.cli.CLIConfig;
 import co.cask.cdap.cli.ElementType;
 import co.cask.cdap.cli.exception.CommandInputError;
 import co.cask.cdap.cli.util.AbstractAuthCommand;
+import co.cask.cdap.cli.util.Grammar;
 import co.cask.cdap.cli.util.RowMaker;
 import co.cask.cdap.cli.util.table.Table;
 import co.cask.cdap.client.ProgramClient;
@@ -94,6 +95,6 @@ public class GetProgramLiveInfoCommand extends AbstractAuthCommand {
 
   @Override
   public String getDescription() {
-    return String.format("Gets the live info of a %s.", elementType.getPrettyName());
+    return String.format("Gets the live info of %s.", Grammar.a(elementType.getPrettyName()));
   }
 }

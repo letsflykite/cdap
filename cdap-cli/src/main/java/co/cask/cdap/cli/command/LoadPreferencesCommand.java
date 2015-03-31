@@ -19,6 +19,7 @@ package co.cask.cdap.cli.command;
 import co.cask.cdap.cli.ArgumentName;
 import co.cask.cdap.cli.CLIConfig;
 import co.cask.cdap.cli.ElementType;
+import co.cask.cdap.cli.util.Grammar;
 import co.cask.cdap.client.PreferencesClient;
 import co.cask.cdap.common.exception.BadRequestException;
 import co.cask.common.cli.Arguments;
@@ -93,7 +94,7 @@ public class LoadPreferencesCommand extends AbstractSetPreferencesCommand {
 
   @Override
   public String getDescription() {
-    return String.format("Set Preferences of a %s from a local Config File (supported formats = JSON).",
-                         type.getPluralPrettyName());
+    return String.format("Set Preferences of %s from a local Config File (supported formats = JSON).",
+                         Grammar.a(type.getPluralPrettyName()));
   }
 }

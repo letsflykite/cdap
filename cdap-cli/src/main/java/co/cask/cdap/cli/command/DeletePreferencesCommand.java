@@ -20,6 +20,7 @@ import co.cask.cdap.cli.CLIConfig;
 import co.cask.cdap.cli.ElementType;
 import co.cask.cdap.cli.exception.CommandInputError;
 import co.cask.cdap.cli.util.AbstractAuthCommand;
+import co.cask.cdap.cli.util.Grammar;
 import co.cask.cdap.client.PreferencesClient;
 import co.cask.cdap.proto.Id;
 import co.cask.common.cli.Arguments;
@@ -148,6 +149,6 @@ public class DeletePreferencesCommand extends AbstractAuthCommand {
 
   @Override
   public String getDescription() {
-    return String.format("Deletes the preferences of a %s.", type.getPrettyName());
+    return String.format("Deletes the preferences of %s.", Grammar.a(type.getPrettyName()));
   }
 }

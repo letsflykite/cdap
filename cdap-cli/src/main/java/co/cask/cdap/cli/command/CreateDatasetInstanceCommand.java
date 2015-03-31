@@ -21,6 +21,7 @@ import co.cask.cdap.cli.CLIConfig;
 import co.cask.cdap.cli.ElementType;
 import co.cask.cdap.cli.util.AbstractAuthCommand;
 import co.cask.cdap.cli.util.ArgumentParser;
+import co.cask.cdap.cli.util.Grammar;
 import co.cask.cdap.client.DatasetClient;
 import co.cask.cdap.proto.DatasetInstanceConfiguration;
 import co.cask.common.cli.Arguments;
@@ -67,6 +68,6 @@ public class CreateDatasetInstanceCommand extends AbstractAuthCommand {
 
   @Override
   public String getDescription() {
-    return String.format("Creates a %s.", ElementType.DATASET.getPrettyName());
+    return String.format("Creates %s.", Grammar.a(ElementType.DATASET.getPrettyName()));
   }
 }

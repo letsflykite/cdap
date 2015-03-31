@@ -22,6 +22,7 @@ import co.cask.cdap.cli.ElementType;
 import co.cask.cdap.cli.exception.CommandInputError;
 import co.cask.cdap.cli.util.AbstractAuthCommand;
 import co.cask.cdap.cli.util.ArgumentParser;
+import co.cask.cdap.cli.util.Grammar;
 import co.cask.cdap.client.ProgramClient;
 import co.cask.common.cli.Arguments;
 import com.google.gson.Gson;
@@ -80,7 +81,7 @@ public class StartProgramCommand extends AbstractAuthCommand {
 
   @Override
   public String getDescription() {
-    return "Starts a " + elementType.getPrettyName() + "." +
+    return "Starts " + Grammar.a(elementType.getPrettyName()) + "." +
       " <" + ArgumentName.RUNTIME_ARGS + "> is specified in the format \"key1=a key2=b\".";
   }
 }

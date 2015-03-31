@@ -25,6 +25,7 @@ import co.cask.cdap.cli.ElementType;
 import co.cask.cdap.cli.exception.CommandInputError;
 import co.cask.cdap.cli.util.AbstractCommand;
 import co.cask.cdap.cli.util.FilePathResolver;
+import co.cask.cdap.cli.util.Grammar;
 import co.cask.cdap.cli.util.RowMaker;
 import co.cask.cdap.cli.util.table.Table;
 import co.cask.cdap.client.ServiceClient;
@@ -137,11 +138,11 @@ public class CallServiceCommand extends AbstractCommand implements Categorized {
 
   @Override
   public String getDescription() {
-    return String.format("Calls a %s endpoint. The <%s> are formatted as \"{'key':'value', ...}\"." +
+    return String.format("Calls %s endpoint. The <%s> are formatted as \"{'key':'value', ...}\"." +
                          " The request body may be provided either as a string or a file." +
                          " To provide the body as a string, use \"body <%s>\"." +
                          " To provide the body as a file, use \"body:file <%s>\".",
-                         ElementType.SERVICE.getPrettyName(),
+                         Grammar.a(ElementType.SERVICE.getPrettyName()),
                          ArgumentName.HEADERS, ArgumentName.HTTP_BODY, ArgumentName.LOCAL_FILE_PATH);
   }
 

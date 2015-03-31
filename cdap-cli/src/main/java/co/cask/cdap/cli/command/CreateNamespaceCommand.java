@@ -20,6 +20,7 @@ import co.cask.cdap.cli.ArgumentName;
 import co.cask.cdap.cli.CLIConfig;
 import co.cask.cdap.cli.ElementType;
 import co.cask.cdap.cli.util.AbstractCommand;
+import co.cask.cdap.cli.util.Grammar;
 import co.cask.cdap.client.NamespaceClient;
 import co.cask.cdap.proto.NamespaceMeta;
 import co.cask.common.cli.Arguments;
@@ -61,6 +62,6 @@ public class CreateNamespaceCommand extends AbstractCommand {
 
   @Override
   public String getDescription() {
-    return String.format("Creates a %s in CDAP.", ElementType.NAMESPACE.getName());
+    return String.format("Creates %s in CDAP.", Grammar.a(ElementType.NAMESPACE.getName()));
   }
 }

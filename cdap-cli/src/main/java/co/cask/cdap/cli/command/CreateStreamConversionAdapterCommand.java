@@ -23,6 +23,7 @@ import co.cask.cdap.cli.ArgumentName;
 import co.cask.cdap.cli.CLIConfig;
 import co.cask.cdap.cli.ElementType;
 import co.cask.cdap.cli.util.AbstractAuthCommand;
+import co.cask.cdap.cli.util.Grammar;
 import co.cask.cdap.client.AdapterClient;
 import co.cask.cdap.proto.AdapterConfig;
 import co.cask.common.cli.Arguments;
@@ -126,12 +127,12 @@ public class CreateStreamConversionAdapterCommand extends AbstractAuthCommand {
   @Override
   public String getDescription() {
     return new StringBuilder()
-      .append("Creates a ")
-      .append(ElementType.STREAM.getPrettyName())
+      .append("Creates ")
+      .append(Grammar.a(ElementType.STREAM.getPrettyName()))
       .append(" conversion ")
       .append(ElementType.ADAPTER.getPrettyName())
-      .append(" that periodically reads from a ")
-      .append(ElementType.STREAM.getPrettyName())
+      .append(" that periodically reads from ")
+      .append(Grammar.a(ElementType.STREAM.getPrettyName()))
       .append(" and writes to a time-partitioned fileset. <")
       .append(ArgumentName.FREQUENCY)
       .append("> is a number followed by a 'm', 'h', or 'd' for minute, hour, or day. <")

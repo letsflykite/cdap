@@ -21,7 +21,7 @@ import co.cask.cdap.common.conf.Constants;
 import co.cask.http.AbstractHttpHandler;
 import co.cask.http.HttpResponder;
 import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import org.apache.hadoop.conf.Configuration;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.ByteOrder;
+import java.util.List;
 import java.util.Map;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -62,12 +63,12 @@ public class ConfigHandler extends AbstractHttpHandler {
   public void configCDAP(@SuppressWarnings("UnusedParameters") HttpRequest request, HttpResponder responder,
                         @DefaultValue("json") @QueryParam("format") String format) {
     if ("json".equals(format)) {
-      responder.sendJson(HttpResponseStatus.OK, toMap(cConf));
+      responder.sendJson(HttpResponseStatus.OK, toObject(cConf));
     } else if ("xml".equals(format)) {
       try {
         StringWriter stringWriter = new StringWriter();
         cConf.writeXml(stringWriter);
-        responder.sendContent(HttpResponseStatus.OK, stringWriter2ChannelBuffer(stringWriter), "application/xml", null);
+        responder.sendContent(HttpResponseStatus.OK, newChannelBuffer(stringWriter), "application/xml", null);
       } catch (IOException e) {
         LOG.info("Failed to write cConf to XML", e);
         responder.sendStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
@@ -82,12 +83,12 @@ public class ConfigHandler extends AbstractHttpHandler {
   public void configHBase(@SuppressWarnings("UnusedParameters") HttpRequest request, HttpResponder responder,
                           @DefaultValue("json") @QueryParam("format") String format) {
     if ("json".equals(format)) {
-      responder.sendJson(HttpResponseStatus.OK, toMap(hConf));
+      responder.sendJson(HttpResponseStatus.OK, toObject(hConf));
     } else if ("xml".equals(format)) {
       try {
         StringWriter stringWriter = new StringWriter();
         hConf.writeXml(stringWriter);
-        responder.sendContent(HttpResponseStatus.OK, stringWriter2ChannelBuffer(stringWriter), "application/xml", null);
+        responder.sendContent(HttpResponseStatus.OK, newChannelBuffer(stringWriter), "application/xml", null);
       } catch (IOException e) {
         LOG.info("Failed to write hConf to XML", e);
         responder.sendStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
@@ -97,15 +98,60 @@ public class ConfigHandler extends AbstractHttpHandler {
     }
   }
 
-  private ChannelBuffer stringWriter2ChannelBuffer(StringWriter stringWriter) {
+  private ChannelBuffer newChannelBuffer(StringWriter stringWriter) {
     return ChannelBuffers.copiedBuffer(ByteOrder.BIG_ENDIAN, stringWriter.toString(), Charsets.UTF_8);
   }
 
-  private Map<String, String> toMap(Iterable<Map.Entry<String, String>> configuration) {
-    ImmutableMap.Builder<String, String> result = ImmutableMap.builder();
-    for (Map.Entry<String, String> entry : configuration) {
-      result.put(entry.getKey(), entry.getValue());
+  private String getFirstElement(String[] array) {
+    if (array != null && array.length >= 1) {
+      return array[0];
+    } else {
+      return null;
     }
-    return result.build();
+  }
+
+  private List<ConfigEntry> toObject(Configuration configuration) {
+    List<ConfigEntry> result = Lists.newArrayList();
+    for (Map.Entry<String, String> entry : configuration) {
+      String source = getFirstElement(configuration.getPropertySources(entry.getKey()));
+      result.add(new ConfigEntry(entry.getKey(), entry.getValue(), source));
+    }
+    return result;
+  }
+
+  private List<ConfigEntry> toObject(CConfiguration configuration) {
+    List<ConfigEntry> result = Lists.newArrayList();
+    for (Map.Entry<String, String> entry : configuration) {
+      String source = getFirstElement(configuration.getPropertySources(entry.getKey()));
+      result.add(new ConfigEntry(entry.getKey(), entry.getValue(), source));
+    }
+    return result;
+  }
+
+  /**
+   * Represents an entry in {@link Configuration} or {@link CConfiguration}.
+   */
+  private static final class ConfigEntry {
+    private final String name;
+    private final String value;
+    private final String source;
+
+    private ConfigEntry(String name, String value, String source) {
+      this.name = name;
+      this.value = value;
+      this.source = source;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public String getValue() {
+      return value;
+    }
+
+    public String getSource() {
+      return source;
+    }
   }
 }

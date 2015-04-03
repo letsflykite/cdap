@@ -23,6 +23,8 @@ import co.cask.cdap.data2.transaction.queue.coprocessor.hbase94.DequeueScanObser
 import co.cask.cdap.data2.transaction.queue.coprocessor.hbase94.HBaseQueueRegionObserver;
 import co.cask.cdap.data2.util.TableId;
 import co.cask.cdap.proto.Id;
+import co.cask.tephra.TxConstants;
+import co.cask.tephra.hbase94.TransactionAwareHTable;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -36,6 +38,7 @@ import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.io.hfile.Compression;
 import org.apache.hadoop.hbase.regionserver.StoreFile;
 
@@ -54,6 +57,12 @@ public class HBase94TableUtil extends HBaseTableUtil {
   public HTable createHTable(Configuration conf, TableId tableId) throws IOException {
     Preconditions.checkArgument(tableId != null, "Table id should not be null");
     return new HTable(conf, nameConverter.toTableName(tablePrefix, tableId));
+  }
+
+  @Override
+  public HTableInterface createTransactionAwareHTable(Configuration conf, TableId tableId,
+                                                      TxConstants.ConflictDetection conflictLevel) throws IOException {
+    return new TransactionAwareHTable(createHTable(conf, tableId), conflictLevel);
   }
 
   @Override

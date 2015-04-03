@@ -24,7 +24,6 @@ import co.cask.cdap.api.dataset.table.ConflictDetection;
 import co.cask.cdap.api.dataset.table.Get;
 import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.api.dataset.table.Row;
-import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.proto.Id;
 import co.cask.tephra.Transaction;
@@ -44,13 +43,12 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Base test for Table.
  * @param <T> table type
  */
-public abstract class TableTest<T extends Table> {
+public abstract class TableTest<T extends Table> extends TableTestBase {
   static final byte[] R1 = Bytes.toBytes("r1");
   static final byte[] R2 = Bytes.toBytes("r2");
   static final byte[] R3 = Bytes.toBytes("r3");
@@ -721,6 +719,7 @@ public abstract class TableTest<T extends Table> {
       Assert.assertTrue(txClient.canCommit(tx1, ((TransactionAware) myTable1).getTxChanges()));
       Assert.assertTrue(((TransactionAware) myTable1).commitTx());
       Assert.assertTrue(txClient.commit(tx1));
+      ((TransactionAware) myTable1).postTxCommit();
 
       // Now, we will test delete ops
       // start new tx2
@@ -783,6 +782,7 @@ public abstract class TableTest<T extends Table> {
       Assert.assertTrue(txClient.canCommit(tx3, ((TransactionAware) myTable1).getTxChanges()));
       Assert.assertTrue(((TransactionAware) myTable1).commitTx());
       Assert.assertTrue(txClient.commit(tx3));
+      ((TransactionAware) myTable1).postTxCommit();
 
       // starting tx4 before committing tx2 so that we can check conflicts are detected wrt deletes
       Transaction tx4 = txClient.startShort();
@@ -1538,64 +1538,5 @@ public abstract class TableTest<T extends Table> {
 
     // drop table
     admin.drop();
-  }
-
-  void verify(byte[][] expected, Row row) {
-    verify(expected, row.getColumns());
-  }
-
-  void verify(byte[][] expected, Map<byte[], byte[]> rowMap) {
-    Assert.assertEquals(expected.length / 2, rowMap.size());
-    for (int i = 0; i < expected.length; i += 2) {
-      byte[] key = expected[i];
-      byte[] val = expected[i + 1];
-      Assert.assertArrayEquals(val, rowMap.get(key));
-    }
-  }
-
-  void verify(byte[][] expectedColumns, byte[][] expectedValues, Row row) {
-    Map<byte[], byte[]> actual = row.getColumns();
-    Assert.assertEquals(expectedColumns.length, actual.size());
-    for (int i = 0; i < expectedColumns.length; i++) {
-      Assert.assertArrayEquals(expectedValues[i], actual.get(expectedColumns[i]));
-    }
-  }
-
-  void verify(byte[] expected, byte[] actual) {
-    Assert.assertArrayEquals(expected, actual);
-  }
-
-  void verify(byte[][] expectedRows, byte[][][] expectedRowMaps, Scanner scan) {
-    for (int i = 0; i < expectedRows.length; i++) {
-      Row next = scan.next();
-      Assert.assertNotNull(next);
-      Assert.assertArrayEquals(expectedRows[i], next.getRow());
-      verify(expectedRowMaps[i], next.getColumns());
-    }
-
-    // nothing is left in scan
-    Assert.assertNull(scan.next());
-  }
-
-  static long[] la(long... elems) {
-    return elems;
-  }
-
-  static byte[][] lb(long... elems) {
-    byte[][] elemBytes = new byte[elems.length][];
-    for (int i = 0; i < elems.length; i++) {
-      elemBytes[i] = Bytes.toBytes(elems[i]);
-    }
-    return elemBytes;
-  }
-
-  // to array
-  static byte[][] a(byte[]... elems) {
-    return elems;
-  }
-
-  // to array of array
-  static byte[][][] aa(byte[][]... elems) {
-    return elems;
   }
 }

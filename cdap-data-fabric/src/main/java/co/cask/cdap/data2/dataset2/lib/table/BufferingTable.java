@@ -69,7 +69,7 @@ import javax.annotation.Nullable;
  *       persisted store even if all needed data is in-memory buffer. See more info at method javadoc
  */
 // todo: copying passed params to write methods may be done more efficiently: no need to copy when no changes are made
-public abstract class BufferingTable extends AbstractTable implements MeteredDataset {
+public abstract class BufferingTable extends AbstractTable implements MeteredDataset, TransactionAware {
 
   private static final Logger LOG = LoggerFactory.getLogger(BufferingTable.class);
 
@@ -528,29 +528,6 @@ public abstract class BufferingTable extends AbstractTable implements MeteredDat
     }
 
     return false;
-  }
-
-  /**
-   * Fallback implementation of getSplits, {@link SplitsUtil#primitiveGetSplits(int, byte[], byte[])}.
-   * Ideally should be overridden by subclasses.
-   *
-   * @param numSplits Desired number of splits. If greater than zero, at most this many splits will be returned.
-   *                  If less or equal to zero, any number of splits can be returned.
-   * @param start If non-null, the returned splits will only cover keys that are greater or equal.
-   * @param stop If non-null, the returned splits will only cover keys that are less.
-   * @return list of {@link Split}
-   */
-  @Override
-  public List<Split> getSplits(int numSplits, byte[] start, byte[] stop) {
-    List<KeyRange> keyRanges = SplitsUtil.primitiveGetSplits(numSplits, start, stop);
-    return Lists.transform(keyRanges, new Function<KeyRange, Split>() {
-      @Nullable
-      @Override
-      public Split apply(@Nullable KeyRange input) {
-        return new TableSplit(input == null ? null : input.getStart(),
-                                           input == null ? null : input.getStop());
-      }
-    });
   }
 
   @Override

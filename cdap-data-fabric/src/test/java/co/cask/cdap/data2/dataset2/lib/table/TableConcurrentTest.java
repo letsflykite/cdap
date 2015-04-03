@@ -255,8 +255,8 @@ public abstract class TableConcurrentTest<T extends Table>
     // make sure both threads report success
     Assert.assertTrue("First thread failed. ", success1.get());
     Assert.assertTrue("Second thread failed. ", success2.get());
-    // perform a read - if the table was not opened successfully this will fail
-    getTable(CONTEXT1, "conccreate").get(new byte[]{'a'}, new byte[][]{{'b'}});
+    // get table - if the table was not opened successfully this will fail
+    getTable(CONTEXT1, "conccreate");
   }
 
   class CreateThread extends Thread {

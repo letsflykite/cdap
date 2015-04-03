@@ -154,6 +154,13 @@ public interface Table extends BatchReadable<byte[], Row>, BatchWritable<byte[],
   void put(Put put);
 
   /**
+   * Writes {@link Put}s.
+   *
+   * @param puts defines values to write
+   */
+  void put(List<Put> puts);
+
+  /**
    * Deletes all columns of the specified row.
    * <p>
    * NOTE: Depending on the implementation of this interface and use-case, calling this method can be less
@@ -189,6 +196,13 @@ public interface Table extends BatchReadable<byte[], Row>, BatchWritable<byte[],
    * @param delete defines what to delete
    */
   void delete(Delete delete);
+
+  /**
+   * Deletes columns of a rows as defined by the {@link Delete}s parameter.
+   *
+   * @param delete defines what to delete
+   */
+  void delete(List<Delete> deletes);
 
   /**
    * Increments the specified column of the row by the specified amount and returns the new value.
@@ -260,6 +274,13 @@ public interface Table extends BatchReadable<byte[], Row>, BatchWritable<byte[],
    * @param increment the row and column increment amounts
    */
   void increment(Increment increment);
+
+  /**
+   * Increments (atomically) the specified rows and columns by the specified amounts, without returning the new values.
+   *
+   * @param increments the rows and columns increment amounts
+   */
+  void increment(List<Increment> increments);
 
     /**
      * Scans table.

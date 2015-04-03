@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014-2015 Cask Data, Inc.
+ * Copyright 2015 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -29,14 +29,12 @@ import co.cask.cdap.api.dataset.table.Tables;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.data.hbase.HBaseTestBase;
 import co.cask.cdap.data.hbase.HBaseTestFactory;
-import co.cask.cdap.data2.dataset2.lib.table.BufferingTable;
-import co.cask.cdap.data2.dataset2.lib.table.BufferingTableTest;
+import co.cask.cdap.data2.dataset2.lib.table.TableConcurrentTest;
 import co.cask.cdap.data2.increment.hbase.IncrementHandlerState;
 import co.cask.cdap.data2.increment.hbase96.IncrementHandler;
 import co.cask.cdap.data2.util.TableId;
 import co.cask.cdap.data2.util.hbase.HBaseTableUtil;
 import co.cask.cdap.data2.util.hbase.HBaseTableUtilFactory;
-import co.cask.cdap.test.SlowTests;
 import co.cask.tephra.DefaultTransactionExecutor;
 import co.cask.tephra.Transaction;
 import co.cask.tephra.TransactionAware;
@@ -61,7 +59,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,18 +74,17 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
- *
+ * todo
  */
-@Category(SlowTests.class)
-public class HBaseTableTest extends BufferingTableTest<BufferingTable> {
+public abstract class HBaseTableDatasetTestBase extends TableConcurrentTest<Table> {
   private static final Logger LOG = LoggerFactory.getLogger(HBaseTableTest.class);
+
+  protected static HBaseTestBase testHBase;
+  protected static HBaseTableUtil hBaseTableUtil;
+  protected static CConfiguration cConf;
 
   @ClassRule
   public static TemporaryFolder tmpFolder = new TemporaryFolder();
-
-  private static HBaseTestBase testHBase;
-  private static HBaseTableUtil hBaseTableUtil;
-  private static CConfiguration cConf;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -110,24 +106,10 @@ public class HBaseTableTest extends BufferingTableTest<BufferingTable> {
     testHBase.stopHBase();
   }
 
-  @Override
-  protected BufferingTable getTable(DatasetContext datasetContext, String name,
-                                    ConflictDetection conflictLevel) throws Exception {
-    // ttl=-1 means "keep data forever"
-    DatasetSpecification spec = DatasetSpecification.builder(name, "foo")
-      .property(Table.PROPERTY_READLESS_INCREMENT, "true")
-      .property(Table.PROPERTY_CONFLICT_LEVEL, conflictLevel.name())
-      .build();
-    return new HBaseTable(datasetContext, spec, cConf, testHBase.getConfiguration(), hBaseTableUtil);
-  }
-
-  @Override
-  protected HBaseTableAdmin getTableAdmin(DatasetContext datasetContext, String name,
-                                          DatasetProperties props) throws IOException {
-    DatasetSpecification spec = new HBaseTableDefinition("foo").configure(name, props);
-    return new HBaseTableAdmin(datasetContext, spec, testHBase.getConfiguration(), hBaseTableUtil,
-                               cConf, new LocalLocationFactory(tmpFolder.newFolder()));
-  }
+  protected abstract Table getTable(DatasetContext datasetContext, String name,
+                                ConflictDetection conflictLevel) throws Exception;
+  protected abstract DatasetAdmin getTableAdmin(DatasetContext datasetContext, String name,
+                                                DatasetProperties props) throws Exception;
 
   @Test
   public void testTTL() throws Exception {
@@ -222,13 +204,13 @@ public class HBaseTableTest extends BufferingTableTest<BufferingTable> {
     String enabledTableName = "incr-enable";
     TableId disabledTableId = TableId.from(NAMESPACE1.getId(), disableTableName);
     TableId enabledTableId = TableId.from(NAMESPACE1.getId(), enabledTableName);
-    HBaseTableAdmin disabledAdmin = getTableAdmin(CONTEXT1, disableTableName, DatasetProperties.EMPTY);
+    DatasetAdmin disabledAdmin = getTableAdmin(CONTEXT1, disableTableName, DatasetProperties.EMPTY);
     disabledAdmin.create();
     HBaseAdmin admin = testHBase.getHBaseAdmin();
 
     DatasetProperties props =
       DatasetProperties.builder().add(Table.PROPERTY_READLESS_INCREMENT, "true").build();
-    HBaseTableAdmin enabledAdmin = getTableAdmin(CONTEXT1, enabledTableName, props);
+    DatasetAdmin enabledAdmin = getTableAdmin(CONTEXT1, enabledTableName, props);
     enabledAdmin.create();
 
     try {

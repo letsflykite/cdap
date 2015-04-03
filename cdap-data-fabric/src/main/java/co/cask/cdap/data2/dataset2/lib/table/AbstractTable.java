@@ -29,7 +29,7 @@ import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.api.dataset.table.TableSplit;
-import co.cask.tephra.TransactionAware;
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Lists;
@@ -39,11 +39,12 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import javax.annotation.Nullable;
 
 /**
  * Implements some of the methods in a generic way (not necessarily in most efficient way).
  */
-public abstract class AbstractTable implements Table, TransactionAware {
+public abstract class AbstractTable implements Table {
   private static final Logger LOG = LoggerFactory.getLogger(AbstractTable.class);
 
   // empty immutable row's column->value map constant
@@ -158,6 +159,29 @@ public abstract class AbstractTable implements Table, TransactionAware {
     return getSplits(-1, null, null);
   }
 
+  /**
+   * Fallback implementation of getSplits, {@link SplitsUtil#primitiveGetSplits(int, byte[], byte[])}.
+   * Ideally should be overridden by subclasses.
+   *
+   * @param numSplits Desired number of splits. If greater than zero, at most this many splits will be returned.
+   *                  If less or equal to zero, any number of splits can be returned.
+   * @param start If non-null, the returned splits will only cover keys that are greater or equal.
+   * @param stop If non-null, the returned splits will only cover keys that are less.
+   * @return list of {@link Split}
+   */
+  @Override
+  public List<Split> getSplits(int numSplits, byte[] start, byte[] stop) {
+    List<KeyRange> keyRanges = SplitsUtil.primitiveGetSplits(numSplits, start, stop);
+    return Lists.transform(keyRanges, new Function<KeyRange, Split>() {
+      @Nullable
+      @Override
+      public Split apply(@Nullable KeyRange input) {
+        return new TableSplit(input == null ? null : input.getStart(),
+                              input == null ? null : input.getStop());
+      }
+    });
+  }
+
   @Override
   public SplitReader<byte[], Row> createSplitReader(Split split) {
     return new TableScanner();
@@ -182,7 +206,7 @@ public abstract class AbstractTable implements Table, TransactionAware {
       try {
         this.scanner = scan(tableSplit.getStart(), tableSplit.getStop());
       } catch (Exception e) {
-        LOG.debug("scan failed for table: " + getTransactionAwareName(), e);
+        LOG.debug("scan failed for table: " + this, e);
         throw new DataSetException("scan failed", e);
       }
     }

@@ -23,6 +23,7 @@ import co.cask.cdap.data2.transaction.queue.hbase.HBaseQueueAdmin;
 import co.cask.cdap.data2.util.TableId;
 import co.cask.cdap.hbase.wd.AbstractRowKeyDistributor;
 import co.cask.cdap.proto.Id;
+import co.cask.tephra.TxConstants;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -44,6 +45,7 @@ import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableExistsException;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.twill.filesystem.Location;
 import org.apache.twill.internal.utils.Dependencies;
@@ -399,6 +401,20 @@ public abstract class HBaseTableUtil {
    * @return an {@link HTable} for the tableName in the namespace
    */
   public abstract HTable createHTable(Configuration conf, TableId tableId) throws IOException;
+
+  /**
+   * Creates a new {@link HTable} that implements {@link co.cask.tephra.TransactionAware} which may contain
+   * an HBase namespace depending on the HBase version.
+   *
+   * @param conf the hadoop configuration
+   * @param tableId the {@link TableId} to create an {@link HTable} for
+   * @param conflictLevel the {@link TxConstants.ConflictDetection} level to be used
+   * @return a {@link HTable} for the tableName in the namespace that also implements
+   *         {@link co.cask.tephra.TransactionAware}
+   */
+  public abstract HTableInterface createTransactionAwareHTable(Configuration conf, TableId tableId,
+                                                               TxConstants.ConflictDetection conflictLevel)
+    throws IOException;
 
   /**
    * Creates a new {@link HTableDescriptor} which may contain an HBase namespace depending on the HBase version

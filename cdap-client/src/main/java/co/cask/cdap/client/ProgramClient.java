@@ -323,7 +323,8 @@ public class ProgramClient {
    */
   public int getWorkerInstances(String appId, String workerId) throws IOException, NotFoundException,
     UnauthorizedException {
-    URL url = config.resolveURL(String.format("apps/%s/workers/%s/instances", appId, workerId));
+    URL url = VersionMigrationUtils.resolveURL(config, ProgramType.WORKER,
+                                               String.format("apps/%s/workers/%s/instances", appId, workerId));
     HttpResponse response = restClient.execute(HttpMethod.GET, url, config.getAccessToken(),
                                                HttpURLConnection.HTTP_NOT_FOUND);
     if (response.getResponseCode() == HttpURLConnection.HTTP_NOT_FOUND) {
@@ -344,7 +345,9 @@ public class ProgramClient {
    */
   public void setWorkerInstances(String appId, String workerId, int instances) throws IOException, NotFoundException,
     UnauthorizedException {
-    URL url = config.resolveURL(String.format("apps/%s/workers/%s/instances", appId, workerId));
+
+    URL url = VersionMigrationUtils.resolveURL(config, ProgramType.WORKER,
+                                               String.format("apps/%s/workers/%s/instances", appId, workerId));
     HttpRequest request = HttpRequest.put(url).withBody(GSON.toJson(new Instances(instances))).build();
 
     HttpResponse response = restClient.execute(request, config.getAccessToken(), HttpURLConnection.HTTP_NOT_FOUND);

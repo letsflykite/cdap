@@ -21,6 +21,7 @@ import co.cask.cdap.api.data.batch.Split;
 import co.cask.cdap.api.dataset.DataSetException;
 import co.cask.cdap.api.dataset.metrics.MeteredDataset;
 import co.cask.cdap.api.dataset.table.ConflictDetection;
+import co.cask.cdap.api.dataset.table.Filter;
 import co.cask.cdap.api.dataset.table.Result;
 import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scan;
@@ -589,7 +590,7 @@ public abstract class BufferingTable extends AbstractTable implements MeteredDat
 
   private NavigableMap<byte[], NavigableMap<byte[], Update>> applyFilter(
                                                         NavigableMap<byte[], NavigableMap<byte[], Update>> bufferMap,
-                                                        @Nullable Object filter) {
+                                                        @Nullable Filter filter) {
     if (filter == null) {
       return bufferMap;
     }

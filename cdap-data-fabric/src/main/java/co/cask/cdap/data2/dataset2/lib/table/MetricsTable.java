@@ -71,6 +71,7 @@ public interface MetricsTable extends Dataset {
   /**
    * Delete (all columns of) all rows that start with a given prefix.
    */
+  // todo: this is used only in unit-tests, remove
   void deleteAll(byte[] prefix) throws Exception;
 
   /**
@@ -84,6 +85,7 @@ public interface MetricsTable extends Dataset {
   /**
    * Delete (all columns of) a set of rows.
    */
+  // todo: this is used only in unit-tests, remove
   void delete(Collection<byte[]> rows) throws Exception;
 
   /**

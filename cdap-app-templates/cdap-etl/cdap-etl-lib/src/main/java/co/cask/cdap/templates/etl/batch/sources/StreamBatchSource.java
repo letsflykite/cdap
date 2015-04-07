@@ -24,19 +24,24 @@ import co.cask.cdap.templates.etl.api.Property;
 import co.cask.cdap.templates.etl.api.StageConfigurer;
 import co.cask.cdap.templates.etl.api.batch.BatchSource;
 import co.cask.cdap.templates.etl.api.batch.BatchSourceContext;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.io.LongWritable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * A {@link BatchSource} for {@link Stream} to use {@link Stream} as Source.
  */
-public class StreamBatchSource extends BatchSource<LongWritable, StreamEvent> {
+public class  StreamBatchSource extends BatchSource<LongWritable, StreamEvent> {
 
   private static final Logger LOG = LoggerFactory.getLogger(StreamBatchSource.class);
 
   public void configure(StageConfigurer configurer) {
-    configurer.setName(StreamBatchSource.class.getName());
+    configurer.setName(StreamBatchSource.class.getSimpleName());
     configurer.setDescription("Use Stream as Source");
     configurer.addProperty(new Property("streamName", "Name of the stream to use as Source", true));
     configurer.addProperty(new Property("frequency", "Frequency of the schedule", false));
@@ -51,8 +56,8 @@ public class StreamBatchSource extends BatchSource<LongWritable, StreamEvent> {
   public void prepareJob(BatchSourceContext context) {
     long endTime = context.getLogicalStartTime();
     //TODO: Once the method to get the frequency from the schedule is added change it to use that. Then we will not
-    // need the frequency as a configuration here
-    long startTime = endTime - Long.valueOf(context.getRuntimeArguments().get("frequency")) * 1000L;
+    // need the frequency as a configuration here (depends on to CDAP-2048)
+    long startTime = endTime - parseFrequency(context.getRuntimeArguments().get("frequency"));
 
     String streamName = context.getRuntimeArguments().get("streamName");
     LOG.info("Setting input to Stream : {}", streamName);
@@ -63,6 +68,4 @@ public class StreamBatchSource extends BatchSource<LongWritable, StreamEvent> {
                                              "co.cask.cdap.data.stream.decoder.IdentityStreamEventDecoder")
                        .toURI().toString());
   }
-
-
 }

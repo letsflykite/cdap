@@ -17,6 +17,11 @@
 package co.cask.cdap.templates.etl.api.batch;
 
 import co.cask.cdap.templates.etl.api.StageConfigurer;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+import org.apache.commons.lang.StringUtils;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Batch Source forms the first stage of a Batch ETL Pipeline.
@@ -41,4 +46,28 @@ public abstract class BatchSource<KEY, VALUE> {
    * @param context {@link BatchSourceContext}
    */
   public abstract void prepareJob(BatchSourceContext context);
+
+  protected long parseFrequency(String frequencyStr) {
+    //TODO: replace with TimeMathParser (available only internal to cdap)
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(frequencyStr));
+    frequencyStr = frequencyStr.toLowerCase();
+
+    String value = frequencyStr.substring(0, frequencyStr.length() - 1);
+    Preconditions.checkArgument(StringUtils.isNumeric(value));
+    Integer parsedValue = Integer.valueOf(value);
+    Preconditions.checkArgument(parsedValue > 0);
+
+    char lastChar = frequencyStr.charAt(frequencyStr.length() - 1);
+    switch (lastChar) {
+      case 's':
+        return TimeUnit.SECONDS.toMillis(parsedValue);
+      case 'm':
+        return TimeUnit.MINUTES.toMillis(parsedValue);
+      case 'h':
+        return TimeUnit.HOURS.toMillis(parsedValue);
+      case 'd':
+        return TimeUnit.DAYS.toMillis(parsedValue);
+    }
+    throw new IllegalArgumentException(String.format("Time unit not supported: %s", lastChar));
+  }
 }

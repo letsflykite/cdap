@@ -32,7 +32,7 @@ import co.cask.cdap.templates.etl.common.DefaultStageConfigurer;
 import co.cask.cdap.templates.etl.common.config.ETLStage;
 import co.cask.cdap.templates.etl.transforms.IdentityTransform;
 import co.cask.cdap.templates.etl.transforms.StreamToStructuredRecordTransform;
-import co.cask.cdap.templates.etl.transforms.StructuredRecordToAvroTransform;
+import co.cask.cdap.templates.etl.transforms.StructuredRecordToGenericRecordTransform;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -59,7 +59,7 @@ public class ETLBatchTemplate extends ApplicationTemplate<ETLBatchConfig> {
     //plugins management is completed.
     initTable(Lists.<Class>newArrayList(KVTableSource.class, KVTableSink.class, IdentityTransform.class,
                                         StreamBatchSource.class, StreamToStructuredRecordTransform.class,
-                                        StructuredRecordToAvroTransform.class,
+                                        StructuredRecordToGenericRecordTransform.class,
                                         TimePartitionedFileSetDatasetAvroSink.class));
   }
 

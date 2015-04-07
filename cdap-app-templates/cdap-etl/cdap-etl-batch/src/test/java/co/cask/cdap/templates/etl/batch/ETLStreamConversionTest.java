@@ -25,7 +25,7 @@ import co.cask.cdap.templates.etl.batch.sinks.TimePartitionedFileSetDatasetAvroS
 import co.cask.cdap.templates.etl.batch.sources.StreamBatchSource;
 import co.cask.cdap.templates.etl.common.config.ETLStage;
 import co.cask.cdap.templates.etl.transforms.StreamToStructuredRecordTransform;
-import co.cask.cdap.templates.etl.transforms.StructuredRecordToAvroTransform;
+import co.cask.cdap.templates.etl.transforms.StructuredRecordToGenericRecordTransform;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
@@ -58,13 +58,13 @@ public class ETLStreamConversionTest extends TestBase {
 
   private static final Gson GSON = new Gson();
 
-  Schema bodySchema = Schema.recordOf(
+  private static final Schema bodySchema = Schema.recordOf(
     "event",
     Schema.Field.of("ticker", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("num", Schema.of(Schema.Type.INT)),
     Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
 
-  Schema eventSchema = Schema.recordOf(
+  private static final Schema eventSchema = Schema.recordOf(
     "streamEvent",
     Schema.Field.of("ts", Schema.of(Schema.Type.LONG)),
     Schema.Field.of("headers", Schema.mapOf(Schema.of(Schema.Type.STRING), Schema.of(Schema.Type.STRING))),
@@ -115,13 +115,13 @@ public class ETLStreamConversionTest extends TestBase {
   }
 
   private ETLBatchConfig constructETLBatchConfig(String fileSetName) {
-    ETLStage source = new ETLStage(StreamBatchSource.class.getName(),
-                                   ImmutableMap.of("streamName", "myStream", "frequency", "30"));
-    ETLStage transform1 = new ETLStage(StreamToStructuredRecordTransform.class.getName(),
+    ETLStage source = new ETLStage(StreamBatchSource.class.getSimpleName(),
+                                   ImmutableMap.of("streamName", "myStream", "frequency", "1m"));
+    ETLStage transform1 = new ETLStage(StreamToStructuredRecordTransform.class.getSimpleName(),
                                        ImmutableMap.of("schemaType", Formats.CSV, "schema", bodySchema.toString()));
-    ETLStage transform2 = new ETLStage(StructuredRecordToAvroTransform.class.getName(),
+    ETLStage transform2 = new ETLStage(StructuredRecordToGenericRecordTransform.class.getSimpleName(),
                                        ImmutableMap.<String, String>of());
-    ETLStage sink = new ETLStage(TimePartitionedFileSetDatasetAvroSink.class.getName(),
+    ETLStage sink = new ETLStage(TimePartitionedFileSetDatasetAvroSink.class.getSimpleName(),
                                  ImmutableMap.of("schema", eventSchema.toString(), "name", fileSetName));
     List<ETLStage> transformList = Lists.newArrayList();
     transformList.add(transform1);

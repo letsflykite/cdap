@@ -55,18 +55,15 @@ public class FileSetSourceSinkTest extends TestBase {
 
     addDatasetInstance("fileSet", sourceFileset, FileSetProperties.builder()
       .setBasePath(sourceFileset)
-      .setInputFormat(TextInputFormat.class)
+      .setInputProperty(FileSetArguments.INPUT_PATHS, "some?File1")
+      .setOutputProperty(FileSetArguments.OUTPUT_PATH, "some?File1")
       .build());
 
-    Map<String, String> fileArgs = Maps.newHashMap();
-    FileSetArguments.setInputPath(fileArgs, "some?File1");
-    FileSetArguments.setOutputPath(fileArgs, "some?File1");
     DataSetManager<FileSet> table1 = getDataset(sourceFileset);
     FileSet inputFileset = table1.get();
 
     addDatasetInstance("fileSet", sinkFileset, FileSetProperties.builder()
       .setBasePath(sinkFileset)
-      .setOutputFormat(TextOutputFormat.class)
       .build());
 
     Map<String, String> fileset2FileArgs = Maps.newHashMap();
@@ -77,8 +74,9 @@ public class FileSetSourceSinkTest extends TestBase {
 
     ApplicationManager batchManager = deployApplication(ETLBatchTemplate.class);
 
-    Location fileSet1Output = inputFileset.getOutputLocation();
-    OutputStream out = inputFileset.getOutputLocation().getOutputStream();
+
+
+    OutputStream out = inputFileset.getInputLocations().get(0).getOutputStream();
     out.write(42);
     out.close();
 

@@ -73,8 +73,8 @@ public class Scan {
   @Override
   public String toString() {
     return Objects.toStringHelper(this)
-      .add("startRow", startRow == null ? null : Bytes.toStringBinary(startRow))
-      .add("stopRow", stopRow == null ? null : Bytes.toStringBinary(stopRow))
+      .add("startRow", Bytes.toStringBinary(startRow))
+      .add("stopRow", Bytes.toStringBinary(stopRow))
       .add("filter", filter)
       .toString();
   }

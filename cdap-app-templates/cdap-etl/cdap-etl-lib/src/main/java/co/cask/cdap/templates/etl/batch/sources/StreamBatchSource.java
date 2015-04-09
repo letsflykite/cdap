@@ -24,14 +24,9 @@ import co.cask.cdap.templates.etl.api.Property;
 import co.cask.cdap.templates.etl.api.StageConfigurer;
 import co.cask.cdap.templates.etl.api.batch.BatchSource;
 import co.cask.cdap.templates.etl.api.batch.BatchSourceContext;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
-import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.io.LongWritable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * A {@link BatchSource} for {@link Stream} to use {@link Stream} as Source.

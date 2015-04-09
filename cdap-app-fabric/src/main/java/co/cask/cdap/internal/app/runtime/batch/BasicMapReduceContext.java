@@ -82,7 +82,7 @@ public class BasicMapReduceContext extends AbstractContext implements MapReduceC
                                DatasetFramework dsFramework,
                                @Nullable String adapterName) {
     super(program, runId, runtimeArguments, datasets,
-          getMetricCollector(metricsCollectionService, program, type, runId.getId(), taskId),
+          getMetricCollector(metricsCollectionService, program, type, runId.getId(), taskId, adapterName),
           dsFramework, discoveryServiceClient);
     this.logicalStartTime = logicalStartTime;
     this.workflowBatch = workflowBatch;
@@ -242,7 +242,8 @@ public class BasicMapReduceContext extends AbstractContext implements MapReduceC
   }
 
   private static MetricsCollector getMetricCollector(MetricsCollectionService service, Program program,
-                                                     MapReduceMetrics.TaskType type, String runId, String taskId) {
+                                                     MapReduceMetrics.TaskType type, String runId, String taskId,
+                                                     @Nullable String adapterName) {
     if (service == null) {
       return null;
     }
@@ -257,6 +258,10 @@ public class BasicMapReduceContext extends AbstractContext implements MapReduceC
     } else {
       // in a runner (container that submits the job): put program info
       tags.putAll(getMetricsContext(program, runId));
+    }
+
+    if (adapterName != null) {
+      tags.put(Constants.Metrics.Tag.ADAPTER, adapterName);
     }
 
     return service.getCollector(tags);

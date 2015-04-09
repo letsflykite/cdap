@@ -113,6 +113,12 @@ public class MetricsHandlerTestRun extends MetricsSuiteTestBase {
     collector.increment("zz", 1);
     collector.increment("ab", 1);
 
+    collector = collectionService.getCollector(getAdapterContext("yourspace", "WCount1", "ClassicWordCount",
+                                                                 MapReduceMetrics.TaskType.Mapper,
+                                                                 "run1", "task1", "adapter1"));
+    collector.increment("areads", 3);
+    collector.increment("awrites", 4);
+
     // also: user metrics
     Metrics userMetrics = new ProgramUserMetrics(
       collectionService.getCollector(getFlowletContext("myspace", "WordCount1", "WordCounter",
@@ -156,7 +162,7 @@ public class MetricsHandlerTestRun extends MetricsSuiteTestBase {
     verifySearchResultWithTags("/v3/metrics/search?target=tag&tag=namespace:myspace",
                        getSearchResultExpected("app", "WordCount1"));
     verifySearchResultWithTags("/v3/metrics/search?target=tag&tag=namespace:yourspace",
-                       getSearchResultExpected("app", "WCount1"));
+                       getSearchResultExpected("adapter", "adapter1", "app", "WCount1"));
 
     // WordCount should be found in myspace, not in yourspace
     verifySearchResultWithTags("/v3/metrics/search?target=tag&tag=namespace:myspace&tag=app:WordCount1",
@@ -168,10 +174,14 @@ public class MetricsHandlerTestRun extends MetricsSuiteTestBase {
     // WCount should be found in yourspace, not in myspace
     verifySearchResultWithTags("/v3/metrics/search?target=tag&tag=namespace:yourspace&tag=app:WCount1",
                        getSearchResultExpected("flow", "WCounter",
-                                                "flow", "WordCounter",
-                                                "mapreduce", "ClassicWordCount",
-                                                "procedure", "RCounts"
+                                               "flow", "WordCounter",
+                                               "mapreduce", "ClassicWordCount",
+                                               "procedure", "RCounts"
                        ));
+
+    // Child context for adapters should be empty
+    verifySearchResultWithTags("/v3/metrics/search?target=tag&tag=namespace:yourspace&tag=adapter:adapter1",
+                               getSearchResultExpected());
 
     verifySearchResultWithTags("/v3/metrics/search?target=tag&tag=namespace:myspace&tag=app:WCount1",
                                getSearchResultExpected());
@@ -196,7 +206,10 @@ public class MetricsHandlerTestRun extends MetricsSuiteTestBase {
     // verify "*"
 
     verifySearchResultWithTags("/v3/metrics/search?target=tag&tag=namespace:*",
-                               getSearchResultExpected("app", "WordCount1", "app", "WCount1"));
+                               getSearchResultExpected("adapter", "adapter1",
+                                                       "app", "WordCount1",
+                                                       "app", "WCount1",
+                                                       "app", DOT_APP));
 
     verifySearchResultWithTags("/v3/metrics/search?target=tag&tag=namespace:*&tag=app:*",
                                getSearchResultExpected("flow", "WCounter",
@@ -206,7 +219,8 @@ public class MetricsHandlerTestRun extends MetricsSuiteTestBase {
                                                        "procedure", "RCounts"));
 
     verifySearchResultWithTags("/v3/metrics/search?target=tag&tag=namespace:*&tag=app:*&tag=flow:*",
-                               getSearchResultExpected("run", "run1"));
+                               getSearchResultExpected("run", "run1",
+                                                       "run", DOT_RUN));
 
     // verify dots more
     String parts[] = new String[] {
@@ -241,7 +255,8 @@ public class MetricsHandlerTestRun extends MetricsSuiteTestBase {
     verifySearchResult("/v3/metrics/search?target=childContext&context=namespace.myspace",
                        ImmutableList.<String>of("namespace.myspace.app.WordCount1"));
     verifySearchResult("/v3/metrics/search?target=childContext&context=namespace.yourspace",
-                       ImmutableList.<String>of("namespace.yourspace.app.WCount1"));
+                       ImmutableList.<String>of("namespace.yourspace.adapter.adapter1",
+                                                "namespace.yourspace.app.WCount1"));
 
     // WordCount should be found in myspace, not in yourspace
     verifySearchResult("/v3/metrics/search?target=childContext&context=namespace.myspace.app.WordCount1",
@@ -257,6 +272,10 @@ public class MetricsHandlerTestRun extends MetricsSuiteTestBase {
                                                 "namespace.yourspace.app.WCount1.procedure.RCounts"));
 
     verifySearchResult("/v3/metrics/search?target=childContext&context=namespace.myspace.app.WCount1",
+                       ImmutableList.<String>of());
+
+    // no child context for adapters
+    verifySearchResult("/v3/metrics/search?target=childContext&context=namespace.yourspace.adapter.adapter1",
                        ImmutableList.<String>of());
 
     // verify other metrics for WCount app
@@ -332,6 +351,21 @@ public class MetricsHandlerTestRun extends MetricsSuiteTestBase {
       "/v3/metrics/query?context=" + getContext("yourspace", "WCount1", "WCounter", "*") +
         "&metric=system.reads&aggregate=true", 4);
 
+    // for adapters, the same metrics should be available at both, just adapter level as well as mapreduce level
+    // adapter level
+    verifyAggregateQueryResult(
+      "/v3/metrics/query?context=namespace.yourspace.adapter.adapter1&metric=system.areads&aggregate=true", 3);
+    verifyAggregateQueryResult(
+      "/v3/metrics/query?context=namespace.yourspace.adapter.adapter1&metric=system.awrites&aggregate=true", 4);
+    // mapreduce level
+    verifyAggregateQueryResult(
+      "/v3/metrics/query?context=namespace.yourspace.app.WCount1.mapreduce.ClassicWordCount" +
+        "&metric=system.areads&aggregate=true", 3);
+    verifyAggregateQueryResult(
+      "/v3/metrics/query?context=namespace.yourspace.app.WCount1.mapreduce.ClassicWordCount" +
+        "&metric=system.awrites&aggregate=true", 4);
+
+
     // aggregate result, in the wrong namespace
     verifyEmptyQueryResult(
       "/v3/metrics/query?context=" + getContext("myspace", "WCount1", "WCounter", "splitter") +
@@ -394,6 +428,20 @@ public class MetricsHandlerTestRun extends MetricsSuiteTestBase {
     verifyAggregateQueryResult(
       "/v3/metrics/query?" + getTags("yourspace", "WCount1", "WCounter", "*") +
         "&metric=system.reads&aggregate=true", 4);
+
+    // for adapters, the same metrics should be available at both, just adapter level as well as mapreduce level
+    // adapter level
+    verifyAggregateQueryResult(
+      "/v3/metrics/query?tag=namespace:yourspace&tag=adapter:adapter1&metric=system.areads&aggregate=true", 3);
+    verifyAggregateQueryResult(
+      "/v3/metrics/query?tag=namespace:yourspace&tag=adapter:adapter1&metric=system.awrites&aggregate=true", 4);
+    // mapreduce level
+    verifyAggregateQueryResult(
+      "/v3/metrics/query?tag=namespace:yourspace&tag=app:WCount1&mapreduce:ClassicWordCount" +
+        "&metric=system.areads&aggregate=true", 3);
+    verifyAggregateQueryResult(
+      "/v3/metrics/query?tag=namespace:yourspace&tag=app:WCount1&mapreduce:ClassicWordCount" +
+        "&metric=system.awrites&aggregate=true", 4);
 
     // aggregate result, in the wrong namespace
     verifyEmptyQueryResult(
@@ -599,6 +647,9 @@ public class MetricsHandlerTestRun extends MetricsSuiteTestBase {
                                "&tag=flow:WCounter&tag=dataset:*&tag=run:run1&tag=flowlet:splitter",
                              ImmutableList.<String>of("system.reads"));
 
+    verifySearchMetricResult("/v3/metrics/search?target=metric&tag=namespace:yourspace&tag=adapter:adapter1",
+                             ImmutableList.<String>of("system.areads", "system.awrites"));
+
     // wrong namespace
     verifySearchMetricResult("/v3/metrics/search?target=metric&tag=namespace:myspace&tag=app:WCount1" +
                                "&tag=flow:WCounter&tag=dataset:*&tag=run:run1&tag=flowlet:splitter",
@@ -652,6 +703,9 @@ public class MetricsHandlerTestRun extends MetricsSuiteTestBase {
     verifySearchMetricResult("/v3/metrics/search?target=metric&context=namespace.yourspace.app.WCount1" +
                                ".flow.WCounter.dataset.*.run.run1.flowlet.splitter",
                              ImmutableList.<String>of("system.reads"));
+
+    verifySearchMetricResult("/v3/metrics/search?target=metric&context=namespace.yourspace.adapter.adapter1",
+                             ImmutableList.<String>of("system.areads", "system.awrites"));
 
     // wrong namespace
     verifySearchMetricResult("/v3/metrics/search?target=metric&context=namespace.myspace.app.WCount1" +
@@ -766,7 +820,7 @@ public class MetricsHandlerTestRun extends MetricsSuiteTestBase {
     String result = EntityUtils.toString(response.getEntity(), Charsets.UTF_8);
     List<Map<String, String>> reply = new Gson().fromJson(result,
                                                           new TypeToken<List<Map<String, String>>>() { }.getType());
-    Assert.assertTrue(reply.containsAll(expectedValues));
+    Assert.assertTrue(reply.containsAll(expectedValues) && expectedValues.containsAll(reply));
   }
 
   private void verifySearchResultContains(String url, List<String> expectedValues) throws Exception {

@@ -224,6 +224,7 @@ public class ProgramLifecycleHttpHandler extends AbstractAppFabricHttpHandler {
                             @PathParam("mapreduce-id") String mapreduceId,
                             @PathParam("run-id") String runId) {
     try {
+      responder.sendString(HttpResponseStatus.NO_CONTENT, "No content!");
       Id.Program programId = Id.Program.from(namespaceId, appId, ProgramType.MAPREDUCE, mapreduceId);
       Id.Run run = new Id.Run(programId, runId);
       ApplicationSpecification appSpec = store.getApplication(programId.getApplication());
@@ -250,7 +251,7 @@ public class ProgramLifecycleHttpHandler extends AbstractAppFabricHttpHandler {
       responder.sendJson(HttpResponseStatus.OK, mrJobInfo);
     } catch (NotFoundException e) {
       LOG.warn("NotFoundException while getting MapReduce Run info.", e);
-      responder.sendString(HttpResponseStatus.NOT_FOUND, e.getMessage());
+//      responder.sendString(HttpResponseStatus.NOT_FOUND, e.getMessage());
     } catch (Exception e) {
       LOG.error("Failed to get run history for runId: {}", runId, e);
       responder.sendString(HttpResponseStatus.INTERNAL_SERVER_ERROR, e.getMessage());

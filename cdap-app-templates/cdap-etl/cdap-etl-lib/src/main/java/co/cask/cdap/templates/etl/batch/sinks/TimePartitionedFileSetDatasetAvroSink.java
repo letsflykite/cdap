@@ -37,15 +37,15 @@ import java.util.Map;
  */
 public class TimePartitionedFileSetDatasetAvroSink extends BatchSink<AvroKey<GenericRecord>, NullWritable> {
 
-  static final String DATASETNAME = "name";
-  public static final String SCHEMA = "schema";
+  private static final String DATASET_NAME = "name";
+  private static final String SCHEMA = "schema";
 
   @Override
   public void configure(StageConfigurer configurer) {
     configurer.setName(TimePartitionedFileSetDatasetAvroSink.class.getSimpleName());
     configurer.setDescription("An Avro sink for TimePartitionedFileSetDataset");
     configurer.addProperty(new Property(SCHEMA, "The schema of the record", true));
-    configurer.addProperty(new Property(DATASETNAME, "Name of the Time Partitioned FileSet Dataset to which the " +
+    configurer.addProperty(new Property(DATASET_NAME, "Name of the Time Partitioned FileSet Dataset to which the " +
       "records have to be written", true));
   }
 
@@ -54,8 +54,8 @@ public class TimePartitionedFileSetDatasetAvroSink extends BatchSink<AvroKey<Gen
   public void prepareJob(BatchSinkContext context) {
     Map<String, String> sinkArgs = Maps.newHashMap();
     TimePartitionedFileSetArguments.setOutputPartitionTime(sinkArgs, context.getLogicalStartTime());
-    TimePartitionedFileSet sink = context.getDataset(context.getRuntimeArguments().get(DATASETNAME), sinkArgs);
-    context.setOutput(context.getRuntimeArguments().get(DATASETNAME), sink);
+    TimePartitionedFileSet sink = context.getDataset(context.getRuntimeArguments().get(DATASET_NAME), sinkArgs);
+    context.setOutput(context.getRuntimeArguments().get(DATASET_NAME), sink);
     Schema avroSchema = new Schema.Parser().parse(context.getRuntimeArguments().get(SCHEMA));
     Job job = context.getHadoopJob();
     AvroJob.setOutputKeySchema(job, avroSchema);

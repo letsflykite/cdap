@@ -32,8 +32,8 @@ import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.StreamWriter;
 import co.cask.cdap.test.TestBase;
-import com.clearspring.analytics.util.Lists;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import org.apache.avro.file.DataFileStream;
@@ -59,13 +59,13 @@ public class ETLStreamConversionTest extends TestBase {
 
   private static final Gson GSON = new Gson();
 
-  private static final Schema bodySchema = Schema.recordOf(
+  private static final Schema BODY_SCHEMA = Schema.recordOf(
     "event",
     Schema.Field.of("ticker", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("num", Schema.of(Schema.Type.INT)),
     Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
 
-  private static final Schema eventSchema = Schema.recordOf(
+  private static final Schema EVENT_SCHEMA = Schema.recordOf(
     "streamEvent",
     Schema.Field.of("ts", Schema.of(Schema.Type.LONG)),
     Schema.Field.of("headers", Schema.mapOf(Schema.of(Schema.Type.STRING), Schema.of(Schema.Type.STRING))),
@@ -85,7 +85,7 @@ public class ETLStreamConversionTest extends TestBase {
       .setSerDe("org.apache.hadoop.hive.serde2.avro.AvroSerDe")
       .setExploreInputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat")
       .setExploreOutputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat")
-      .setTableProperty("avro.schema.literal", eventSchema.toString())
+      .setTableProperty("avro.schema.literal", EVENT_SCHEMA.toString())
       .build());
 
     ApplicationManager batchManager = deployApplication(ETLBatchTemplate.class);
@@ -110,7 +110,7 @@ public class ETLStreamConversionTest extends TestBase {
     DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset(filesetName);
     TimePartitionedFileSet fileSet = fileSetManager.get();
 
-    List<GenericRecord> records = readOutput(fileSet, eventSchema);
+    List<GenericRecord> records = readOutput(fileSet, EVENT_SCHEMA);
 
     Assert.assertEquals(1, records.size());
   }
@@ -119,13 +119,13 @@ public class ETLStreamConversionTest extends TestBase {
     ETLStage source = new ETLStage(StreamBatchSource.class.getSimpleName(),
                                    ImmutableMap.of("streamName", "myStream", "frequency", "1m"));
     ETLStage streamToStructuredRecord = new ETLStage(StreamToStructuredRecordTransform.class.getSimpleName(),
-                                       ImmutableMap.of("format.name", Formats.CSV, "schema", bodySchema.toString()));
+                                       ImmutableMap.of("format.name", Formats.CSV, "schema", BODY_SCHEMA.toString()));
     ETLStage structuredRecordToGeneric = new ETLStage(StructuredRecordToGenericRecordTransform.class.getSimpleName(),
                                        ImmutableMap.<String, String>of());
     ETLStage genericToAvro = new ETLStage(GenericTypeToAvroKeyTransform.class.getSimpleName(),
                                        ImmutableMap.<String, String>of());
     ETLStage sink = new ETLStage(TimePartitionedFileSetDatasetAvroSink.class.getSimpleName(),
-                                 ImmutableMap.of("schema", eventSchema.toString(), "name", fileSetName));
+                                 ImmutableMap.of("schema", EVENT_SCHEMA.toString(), "name", fileSetName));
     List<ETLStage> transformList = Lists.newArrayList();
     transformList.add(streamToStructuredRecord);
     transformList.add(structuredRecordToGeneric);

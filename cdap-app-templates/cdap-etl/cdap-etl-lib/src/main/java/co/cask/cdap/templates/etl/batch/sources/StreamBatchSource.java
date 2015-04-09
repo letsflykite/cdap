@@ -24,6 +24,7 @@ import co.cask.cdap.templates.etl.api.Property;
 import co.cask.cdap.templates.etl.api.StageConfigurer;
 import co.cask.cdap.templates.etl.api.batch.BatchSource;
 import co.cask.cdap.templates.etl.api.batch.BatchSourceContext;
+import co.cask.cdap.templates.etl.common.ETLUtils;
 import org.apache.hadoop.io.LongWritable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +32,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A {@link BatchSource} for {@link Stream} to use {@link Stream} as Source.
  */
-public class  StreamBatchSource extends BatchSource<LongWritable, StreamEvent> {
+public class StreamBatchSource extends BatchSource<LongWritable, StreamEvent> {
 
   private static final Logger LOG = LoggerFactory.getLogger(StreamBatchSource.class);
 
@@ -52,7 +53,7 @@ public class  StreamBatchSource extends BatchSource<LongWritable, StreamEvent> {
     long endTime = context.getLogicalStartTime();
     //TODO: Once the method to get the frequency from the schedule is added change it to use that. Then we will not
     // need the frequency as a configuration here (depends on to CDAP-2048)
-    long startTime = endTime - parseFrequency(context.getRuntimeArguments().get("frequency"));
+    long startTime = endTime - ETLUtils.parseFrequency(context.getRuntimeArguments().get("frequency"));
 
     String streamName = context.getRuntimeArguments().get("streamName");
     LOG.info("Setting input to Stream : {}", streamName);

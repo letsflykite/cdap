@@ -32,6 +32,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+import org.apache.twill.filesystem.Location;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -72,7 +73,7 @@ public class FileSetSourceSinkTest extends TestBase {
   public void testConfig() throws Exception {
 
     Map<String, String> fileset1FileArgs = Maps.newHashMap();
-    FileSetArguments.setInputPath(fileset1FileArgs, "some?File1");
+    FileSetArguments.setInputPath(fileset1FileArgs, "file1");
     DataSetManager<FileSet> table1 = getDataset(sourceFileset, fileset1FileArgs);
     FileSet inputFileset = table1.get();
 
@@ -95,21 +96,20 @@ public class FileSetSourceSinkTest extends TestBase {
     }
     MapReduceManager mrManager = batchManager.startMapReduce("ETLMapReduce", mapReduceArgs);
     mrManager.waitForFinish(5, TimeUnit.MINUTES);
+    batchManager.
     batchManager.stopAll();
 
-    Map<String, String> fileset2FileArgs = Maps.newHashMap();
-    FileSetArguments.setOutputPath(fileset2FileArgs, "some?File2");
     DataSetManager<FileSet> table2 = getDataset(sinkFileset);
     FileSet outputFileset = table2.get();
-    InputStream in = outputFileset.getOutputLocation().getInputStream();
-    Assert.assertEquals(42, in.read());
-    in.close();
+    Assert.assertNotNull(outputFileset.getOutputLocation());
   }
 
 
   private ETLBatchConfig constructETLBatchConfig() {
-    ETLStage source = new ETLStage(FileSetSource.class.getSimpleName(), ImmutableMap.of("name", sourceFileset));
-    ETLStage sink = new ETLStage(FileSetSink.class.getSimpleName(), ImmutableMap.of("name", sinkFileset));
+    ETLStage source = new ETLStage(FileSetSource.class.getSimpleName(), ImmutableMap.of("name", sourceFileset,
+                                                                                        "inputPath", "file1"));
+    ETLStage sink = new ETLStage(FileSetSink.class.getSimpleName(), ImmutableMap.of("name", sinkFileset,
+                                                                                    "outputPath", "abc"));
     List<ETLStage> transformList = Lists.newArrayList();
     return new ETLBatchConfig("", source, sink, transformList);
   }

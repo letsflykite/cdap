@@ -60,7 +60,6 @@ public class MapReduceMetricsInfoTest {
     injector.getInstance(TransactionManager.class).startAndWait();
     injector.getInstance(DatasetOpExecutor.class).startAndWait();
     injector.getInstance(DatasetService.class).startAndWait();
-    injector.getInstance(MetricsQueryService.class).startAndWait();
     return injector;
   }
 

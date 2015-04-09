@@ -16,7 +16,6 @@
 
 package co.cask.cdap.app.mapreduce;
 
-import co.cask.cdap.api.dataset.lib.cube.TagValue;
 import co.cask.cdap.api.dataset.lib.cube.TimeValue;
 import co.cask.cdap.api.metrics.MetricDataQuery;
 import co.cask.cdap.api.metrics.MetricStore;
@@ -60,43 +59,40 @@ public class MapReduceMetricsInfo {
   public MRJobInfo getMRJobInfo(Id.Run runId) throws Exception {
     Preconditions.checkArgument(ProgramType.MAPREDUCE.equals(runId.getProgram().getType()));
 
-    // baseTagValues has tag keys: ns.app.mr.runid
-    List<TagValue> baseTagValues = Lists.newArrayList();
-    baseTagValues.add(new TagValue(Constants.Metrics.Tag.NAMESPACE, runId.getNamespace().getId()));
-    baseTagValues.add(new TagValue(Constants.Metrics.Tag.APP, runId.getProgram().getApplicationId()));
-    baseTagValues.add(new TagValue(Constants.Metrics.Tag.MAPREDUCE, runId.getProgram().getId()));
-    baseTagValues.add(new TagValue(Constants.Metrics.Tag.RUN_ID, runId.getId()));
+    // baseTags has tag keys: ns.app.mr.runid
+    Map<String, String> baseTags = Maps.newHashMap();
+    baseTags.put(Constants.Metrics.Tag.NAMESPACE, runId.getNamespace().getId());
+    baseTags.put(Constants.Metrics.Tag.APP, runId.getProgram().getApplicationId());
+    baseTags.put(Constants.Metrics.Tag.MAPREDUCE, runId.getProgram().getId());
+    baseTags.put(Constants.Metrics.Tag.RUN_ID, runId.getId());
 
-    List<TagValue> mapTagValues = Lists.newArrayList(baseTagValues);
-    mapTagValues.add(new TagValue(Constants.Metrics.Tag.MR_TASK_TYPE, MapReduceMetrics.TaskType.Mapper.getId()));
+    Map<String, String> mapTags = Maps.newHashMap(baseTags);
+    mapTags.put(Constants.Metrics.Tag.MR_TASK_TYPE, MapReduceMetrics.TaskType.Mapper.getId());
 
-    List<TagValue> reduceTagValues = Lists.newArrayList(baseTagValues);
-    reduceTagValues.add(new TagValue(Constants.Metrics.Tag.MR_TASK_TYPE, MapReduceMetrics.TaskType.Reducer.getId()));
+    Map<String, String> reduceTags = Maps.newHashMap(baseTags);
+    reduceTags.put(Constants.Metrics.Tag.MR_TASK_TYPE, MapReduceMetrics.TaskType.Reducer.getId());
 
     // map from RunId -> (CounterName -> CounterValue)
     Map<String, Map<String, Long>> mapTaskMetrics = Maps.newHashMap();
     Map<String, Map<String, Long>> reduceTaskMetrics = Maps.newHashMap();
 
     // Populate mapTaskMetrics and reduce Task Metrics via MetricStore. Used to construct MRTaskInfo below.
-    Map<String, String> mapperContext = tagValuesToMap(mapTagValues);
-    putMetrics(queryGroupedAggregates(mapperContext, MapReduceMetrics.METRIC_INPUT_RECORDS),
+    // Use batch-querying when it is available on the MetricStore. https://issues.cask.co/browse/CDAP-2045
+    putMetrics(queryGroupedAggregates(mapTags, MapReduceMetrics.METRIC_INPUT_RECORDS),
                mapTaskMetrics, TaskCounter.MAP_INPUT_RECORDS.name());
-    putMetrics(queryGroupedAggregates(mapperContext, MapReduceMetrics.METRIC_OUTPUT_RECORDS),
+    putMetrics(queryGroupedAggregates(mapTags, MapReduceMetrics.METRIC_OUTPUT_RECORDS),
                mapTaskMetrics, TaskCounter.MAP_OUTPUT_RECORDS.name());
-    putMetrics(queryGroupedAggregates(mapperContext, MapReduceMetrics.METRIC_BYTES),
+    putMetrics(queryGroupedAggregates(mapTags, MapReduceMetrics.METRIC_BYTES),
                mapTaskMetrics, TaskCounter.MAP_OUTPUT_BYTES.name());
 
-    Map<String, Long> mapProgress = queryGroupedAggregates(mapperContext, MapReduceMetrics.METRIC_TASK_COMPLETION);
+    Map<String, Long> mapProgress = queryGroupedAggregates(mapTags, MapReduceMetrics.METRIC_TASK_COMPLETION);
 
-
-    Map<String, String> reducerContext = tagValuesToMap(reduceTagValues);
-    putMetrics(queryGroupedAggregates(reducerContext, MapReduceMetrics.METRIC_INPUT_RECORDS),
+    putMetrics(queryGroupedAggregates(reduceTags, MapReduceMetrics.METRIC_INPUT_RECORDS),
                reduceTaskMetrics, TaskCounter.REDUCE_INPUT_RECORDS.name());
-    putMetrics(queryGroupedAggregates(reducerContext, MapReduceMetrics.METRIC_OUTPUT_RECORDS),
+    putMetrics(queryGroupedAggregates(reduceTags, MapReduceMetrics.METRIC_OUTPUT_RECORDS),
                reduceTaskMetrics, TaskCounter.REDUCE_OUTPUT_RECORDS.name());
 
-    Map<String, Long> reduceProgress = queryGroupedAggregates(reducerContext, MapReduceMetrics.METRIC_TASK_COMPLETION);
-
+    Map<String, Long> reduceProgress = queryGroupedAggregates(reduceTags, MapReduceMetrics.METRIC_TASK_COMPLETION);
 
     // Construct MRTaskInfos from the information we can get from Metric system.
     List<MRTaskInfo> mapTaskInfos = Lists.newArrayList();
@@ -112,7 +108,7 @@ public class MapReduceMetricsInfo {
                                          getWithDefault(reduceTaskMetrics, reduceTaskId)));
     }
 
-    return getJobCounters(tagValuesToMap(baseTagValues), mapTaskInfos, reduceTaskInfos);
+    return getJobCounters(mapTags, reduceTags, mapTaskInfos, reduceTaskInfos);
   }
 
 
@@ -129,14 +125,6 @@ public class MapReduceMetricsInfo {
   }
 
 
-  private Map<String, String> tagValuesToMap(List<TagValue> tagValues) {
-    Map<String, String> context = Maps.newHashMap();
-    for (TagValue tagValue : tagValues) {
-      context.put(tagValue.getTagName(), tagValue.getValue());
-    }
-    return context;
-  }
-
   /**
    * Copies metric values from {@param taskMetrics} to {@param allTaskMetrics}.
    * This is necessary because we read metrics from MetricStore in batch (one query for all map or reduce tasks
@@ -152,29 +140,24 @@ public class MapReduceMetricsInfo {
     }
   }
 
-  private MRJobInfo getJobCounters(Map<String, String> jobContext, List<MRTaskInfo> mapTaskInfos,
-                                   List<MRTaskInfo> reduceTaskInfos) throws Exception {
-    Map<String, String> mapContext = Maps.newHashMap(jobContext);
-    mapContext.put(Constants.Metrics.Tag.MR_TASK_TYPE, MapReduceMetrics.TaskType.Mapper.getId());
-    Map<String, String> reduceContext = Maps.newHashMap(jobContext);
-    reduceContext.put(Constants.Metrics.Tag.MR_TASK_TYPE, MapReduceMetrics.TaskType.Reducer.getId());
-
+  private MRJobInfo getJobCounters(Map<String, String> mapTags, Map<String, String> reduceTags,
+                                   List<MRTaskInfo> mapTaskInfos, List<MRTaskInfo> reduceTaskInfos) throws Exception {
     HashMap<String, Long> metrics = Maps.newHashMap();
-
+    // Use batch-querying when it is available on the MetricStore. https://issues.cask.co/browse/CDAP-2045
     metrics.put(TaskCounter.MAP_INPUT_RECORDS.name(),
-                getAggregates(mapContext, MapReduceMetrics.METRIC_INPUT_RECORDS));
+                getAggregates(mapTags, MapReduceMetrics.METRIC_INPUT_RECORDS));
     metrics.put(TaskCounter.MAP_OUTPUT_RECORDS.name(),
-                getAggregates(mapContext, MapReduceMetrics.METRIC_OUTPUT_RECORDS));
+                getAggregates(mapTags, MapReduceMetrics.METRIC_OUTPUT_RECORDS));
     metrics.put(TaskCounter.MAP_OUTPUT_BYTES.name(),
-                getAggregates(mapContext, MapReduceMetrics.METRIC_BYTES));
+                getAggregates(mapTags, MapReduceMetrics.METRIC_BYTES));
 
     metrics.put(TaskCounter.REDUCE_INPUT_RECORDS.name(),
-                getAggregates(reduceContext, MapReduceMetrics.METRIC_INPUT_RECORDS));
+                getAggregates(reduceTags, MapReduceMetrics.METRIC_INPUT_RECORDS));
     metrics.put(TaskCounter.REDUCE_OUTPUT_RECORDS.name(),
-                getAggregates(reduceContext, MapReduceMetrics.METRIC_OUTPUT_RECORDS));
+                getAggregates(reduceTags, MapReduceMetrics.METRIC_OUTPUT_RECORDS));
 
-    float mapProgress = getAggregates(mapContext, MapReduceMetrics.METRIC_COMPLETION) / 100.0F;
-    float reduceProgress = getAggregates(reduceContext, MapReduceMetrics.METRIC_COMPLETION) / 100.0F;
+    float mapProgress = getAggregates(mapTags, MapReduceMetrics.METRIC_COMPLETION) / 100.0F;
+    float reduceProgress = getAggregates(reduceTags, MapReduceMetrics.METRIC_COMPLETION) / 100.0F;
 
     return new MRJobInfo(null, null, null, mapProgress, reduceProgress, metrics, mapTaskInfos, reduceTaskInfos);
   }
@@ -183,9 +166,9 @@ public class MapReduceMetricsInfo {
     return "system." + metric;
   }
 
-  private long getAggregates(Map<String, String> context, String metric) throws Exception {
+  private long getAggregates(Map<String, String> tags, String metric) throws Exception {
     MetricDataQuery metricDataQuery =
-      new MetricDataQuery(0, Integer.MAX_VALUE, Integer.MAX_VALUE, prependSystem(metric), MetricType.COUNTER, context,
+      new MetricDataQuery(0, Integer.MAX_VALUE, Integer.MAX_VALUE, prependSystem(metric), MetricType.COUNTER, tags,
                           ImmutableList.<String>of());
     Collection<MetricTimeSeries> query = metricStore.query(metricDataQuery);
     if (query.isEmpty()) {
@@ -198,9 +181,9 @@ public class MapReduceMetricsInfo {
   }
 
   // queries MetricStore for one metric across all tasks of a certain TaskType, using GroupBy InstanceId
-  private Map<String, Long> queryGroupedAggregates(Map<String, String> context, String metric) throws Exception {
+  private Map<String, Long> queryGroupedAggregates(Map<String, String> tags, String metric) throws Exception {
     MetricDataQuery metricDataQuery =
-      new MetricDataQuery(0, Integer.MAX_VALUE, Integer.MAX_VALUE, prependSystem(metric), MetricType.GAUGE, context,
+      new MetricDataQuery(0, Integer.MAX_VALUE, Integer.MAX_VALUE, prependSystem(metric), MetricType.GAUGE, tags,
                           ImmutableList.of(Constants.Metrics.Tag.INSTANCE_ID));
     Collection<MetricTimeSeries> query = metricStore.query(metricDataQuery);
 

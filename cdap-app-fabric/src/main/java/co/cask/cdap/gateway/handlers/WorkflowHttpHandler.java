@@ -20,7 +20,7 @@ import co.cask.cdap.api.schedule.SchedulableProgramType;
 import co.cask.cdap.api.schedule.ScheduleSpecification;
 import co.cask.cdap.app.ApplicationSpecification;
 import co.cask.cdap.app.mapreduce.MRJobClient;
-import co.cask.cdap.app.mapreduce.MRJobMetricsReporter;
+import co.cask.cdap.app.mapreduce.MapReduceMetricsInfo;
 import co.cask.cdap.app.runtime.ProgramController;
 import co.cask.cdap.app.runtime.ProgramRuntimeService;
 import co.cask.cdap.app.runtime.RunIds;
@@ -71,9 +71,9 @@ public class WorkflowHttpHandler extends ProgramLifecycleHttpHandler {
                              CConfiguration configuration, ProgramRuntimeService runtimeService,
                              DiscoveryServiceClient discoveryServiceClient, QueueAdmin queueAdmin, Scheduler scheduler,
                              PreferencesStore preferencesStore, NamespacedLocationFactory namespacedLocationFactory,
-                             MRJobClient mrJobClient, MRJobMetricsReporter mrJobMetricsReporter) {
+                             MRJobClient mrJobClient, MapReduceMetricsInfo mapReduceMetricsInfo) {
     super(authenticator, store, configuration, runtimeService, discoveryServiceClient,
-          queueAdmin, scheduler, preferencesStore, namespacedLocationFactory, mrJobClient, mrJobMetricsReporter);
+          queueAdmin, scheduler, preferencesStore, namespacedLocationFactory, mrJobClient, mapReduceMetricsInfo);
     this.workflowClient = workflowClient;
   }
 

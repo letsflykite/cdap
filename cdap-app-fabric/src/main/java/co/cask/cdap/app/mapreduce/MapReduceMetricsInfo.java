@@ -19,7 +19,6 @@ package co.cask.cdap.app.mapreduce;
 import co.cask.cdap.api.dataset.lib.cube.TagValue;
 import co.cask.cdap.api.dataset.lib.cube.TimeValue;
 import co.cask.cdap.api.metrics.MetricDataQuery;
-import co.cask.cdap.api.metrics.MetricSearchQuery;
 import co.cask.cdap.api.metrics.MetricStore;
 import co.cask.cdap.api.metrics.MetricTimeSeries;
 import co.cask.cdap.api.metrics.MetricType;
@@ -45,12 +44,12 @@ import java.util.Map;
 /**
  * Retrieves information/reports for a MapReduce run via the Metrics system.
  */
-public class MRJobMetricsReporter {
+public class MapReduceMetricsInfo {
 
   private final MetricStore metricStore;
 
   @Inject
-  public MRJobMetricsReporter(MetricStore metricStore) {
+  public MapReduceMetricsInfo(MetricStore metricStore) {
     this.metricStore = metricStore;
   }
 
@@ -74,18 +73,9 @@ public class MRJobMetricsReporter {
     List<TagValue> reduceTagValues = Lists.newArrayList(baseTagValues);
     reduceTagValues.add(new TagValue(Constants.Metrics.Tag.MR_TASK_TYPE, MapReduceMetrics.TaskType.Reducer.getId()));
 
-    List<String> mapTaskIds = getTaskIds(mapTagValues);
-    List<String> reduceTaskIds = getTaskIds(reduceTagValues);
-
     // map from RunId -> (CounterName -> CounterValue)
     Map<String, Map<String, Long>> mapTaskMetrics = Maps.newHashMap();
-    for (String mapTaskId : mapTaskIds) {
-      mapTaskMetrics.put(mapTaskId, Maps.<String, Long>newHashMap());
-    }
     Map<String, Map<String, Long>> reduceTaskMetrics = Maps.newHashMap();
-    for (String reduceTaskId : reduceTaskIds) {
-      reduceTaskMetrics.put(reduceTaskId, Maps.<String, Long>newHashMap());
-    }
 
     // Populate mapTaskMetrics and reduce Task Metrics via MetricStore. Used to construct MRTaskInfo below.
     Map<String, String> mapperContext = tagValuesToMap(mapTagValues);
@@ -110,19 +100,32 @@ public class MRJobMetricsReporter {
 
     // Construct MRTaskInfos from the information we can get from Metric system.
     List<MRTaskInfo> mapTaskInfos = Lists.newArrayList();
-    for (String mapTaskId : mapTaskIds) {
+    for (String mapTaskId : mapTaskMetrics.keySet()) {
       mapTaskInfos.add(new MRTaskInfo(mapTaskId, null, null, null,
-                                      mapProgress.get(mapTaskId) / 100.0F, mapTaskMetrics.get(mapTaskId)));
+                                      mapProgress.get(mapTaskId) / 100.0F, getWithDefault(mapTaskMetrics, mapTaskId)));
     }
 
     List<MRTaskInfo> reduceTaskInfos = Lists.newArrayList();
-    for (String reduceTaskId : reduceTaskIds) {
+    for (String reduceTaskId : reduceTaskMetrics.keySet()) {
       reduceTaskInfos.add(new MRTaskInfo(reduceTaskId, null, null, null,
                                          reduceProgress.get(reduceTaskId) / 100.0F,
-                                         reduceTaskMetrics.get(reduceTaskId)));
+                                         getWithDefault(reduceTaskMetrics, reduceTaskId)));
     }
 
     return getJobCounters(tagValuesToMap(baseTagValues), mapTaskInfos, reduceTaskInfos);
+  }
+
+
+  private Map<String, Long> getWithDefault(Map<String, Map<String, Long>> map, String key) {
+    return getWithDefault(map, key, Maps.<String, Long>newHashMap());
+  }
+
+  // If map doesn't have given key, an entry will be put into the map with the given default value.
+  private <K, V> V getWithDefault(Map<K, V> map, K key, V defaultValue) {
+    if (!map.containsKey(key)) {
+      map.put(key, defaultValue);
+    }
+    return map.get(key);
   }
 
 
@@ -145,29 +148,8 @@ public class MRJobMetricsReporter {
   private void putMetrics(Map<String, Long> taskMetrics, Map<String, Map<String, Long>> allTaskMetrics,
                           String counterName) {
     for (Map.Entry<String, Long> entry : taskMetrics.entrySet()) {
-      allTaskMetrics.get(entry.getKey()).put(counterName, entry.getValue());
+      getWithDefault(allTaskMetrics, entry.getKey()).put(counterName, entry.getValue());
     }
-
-    // tasks may not be returned from the above query if their metric values are 0.
-    for (Map.Entry<String, Map<String, Long>> entry : allTaskMetrics.entrySet()) {
-      Map<String, Long> metricsMap = entry.getValue();
-      if (!metricsMap.containsKey(counterName)) {
-        metricsMap.put(counterName, 0L);
-      }
-    }
-  }
-
-  // Context -> list of instances
-  private List<String> getTaskIds(List<TagValue> tagValues) throws Exception {
-    List<String> taskIds = Lists.newArrayList();
-    MetricSearchQuery metricSearchQuery = new MetricSearchQuery(0, Integer.MAX_VALUE, Integer.MAX_VALUE, tagValues);
-    Collection<TagValue> nextAvailableTags = metricStore.findNextAvailableTags(metricSearchQuery);
-    for (TagValue tagValue : nextAvailableTags) {
-      if (Constants.Metrics.Tag.INSTANCE_ID.equals(tagValue.getTagName())) {
-        taskIds.add(tagValue.getValue());
-      }
-    }
-    return taskIds;
   }
 
   private MRJobInfo getJobCounters(Map<String, String> jobContext, List<MRTaskInfo> mapTaskInfos,

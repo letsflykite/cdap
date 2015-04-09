@@ -42,7 +42,7 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Map;
 
-public class MRJobMetricsReporterTest {
+public class MapReduceMetricsInfoTest {
   private static Injector injector;
   private static MetricStore metricStore;
 
@@ -109,8 +109,8 @@ public class MRJobMetricsReporterTest {
     gauge(reduceTaskContext, MapReduceMetrics.METRIC_OUTPUT_RECORDS, measureTime, 1L);
 
 
-    MRJobMetricsReporter mrJobMetricsReporter = injector.getInstance(MRJobMetricsReporter.class);
-    MRJobInfo mrJobInfo = mrJobMetricsReporter.getMRJobInfo(runId);
+    MapReduceMetricsInfo mapReduceMetricsInfo = injector.getInstance(MapReduceMetricsInfo.class);
+    MRJobInfo mrJobInfo = mapReduceMetricsInfo.getMRJobInfo(runId);
 
 
     // Check job-level counters

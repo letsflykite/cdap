@@ -17,7 +17,6 @@
 # Build script for docs
 
 # Builds:
-#
 # admin-manual
 # developers-manual
 # reference-manual

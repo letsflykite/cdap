@@ -30,10 +30,11 @@ import co.cask.cdap.test.TestBase;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.hadoop.mapred.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
-import org.apache.twill.filesystem.Location;
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.InputStream;
@@ -49,28 +50,32 @@ public class FileSetSourceSinkTest extends TestBase {
   private static final String sourceFileset = "inputFileset";
   private static final String sinkFileset = "outputFileset";
 
-  @Test
-  public void testConfig() throws Exception {
-
-
+  @BeforeClass
+  public static void beforeClass() throws Exception {
     addDatasetInstance("fileSet", sourceFileset, FileSetProperties.builder()
       .setBasePath(sourceFileset)
-      .setInputProperty(FileSetArguments.INPUT_PATHS, "some?File1")
-      .setOutputProperty(FileSetArguments.OUTPUT_PATH, "some?File1")
+      .setInputFormat(TextInputFormat.class)
       .build());
-
-    DataSetManager<FileSet> table1 = getDataset(sourceFileset);
-    FileSet inputFileset = table1.get();
 
     addDatasetInstance("fileSet", sinkFileset, FileSetProperties.builder()
       .setBasePath(sinkFileset)
+      .setOutputFormat(TextOutputFormat.class)
       .build());
+  }
 
-    Map<String, String> fileset2FileArgs = Maps.newHashMap();
-    FileSetArguments.setOutputPath(fileset2FileArgs, "some?File2");
-    FileSetArguments.setInputPath(fileset2FileArgs, "some?File2");
-    DataSetManager<FileSet> table2 = getDataset(sinkFileset);
-    FileSet outputFileset = table2.get();
+  @AfterClass
+  public static void afterClass() throws Exception {
+    clear();
+  }
+
+  @Test
+  public void testConfig() throws Exception {
+
+    Map<String, String> fileset1FileArgs = Maps.newHashMap();
+    FileSetArguments.setInputPath(fileset1FileArgs, "some?File1");
+    DataSetManager<FileSet> table1 = getDataset(sourceFileset, fileset1FileArgs);
+    FileSet inputFileset = table1.get();
+
 
     ApplicationManager batchManager = deployApplication(ETLBatchTemplate.class);
 
@@ -92,7 +97,11 @@ public class FileSetSourceSinkTest extends TestBase {
     mrManager.waitForFinish(5, TimeUnit.MINUTES);
     batchManager.stopAll();
 
-    InputStream in = outputFileset.getInputLocations().get(0).getInputStream();
+    Map<String, String> fileset2FileArgs = Maps.newHashMap();
+    FileSetArguments.setOutputPath(fileset2FileArgs, "some?File2");
+    DataSetManager<FileSet> table2 = getDataset(sinkFileset);
+    FileSet outputFileset = table2.get();
+    InputStream in = outputFileset.getOutputLocation().getInputStream();
     Assert.assertEquals(42, in.read());
     in.close();
   }

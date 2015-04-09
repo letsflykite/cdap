@@ -36,6 +36,7 @@ public class FileSetSink extends BatchSink<byte[], byte[]> {
 
   @Override
   public void prepareJob(BatchSinkContext context) {
+
     context.setOutput(context.getRuntimeArguments().get(TABLE_NAME));
   }
 }

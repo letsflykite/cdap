@@ -24,6 +24,7 @@ import co.cask.cdap.api.templates.ApplicationTemplate;
 import co.cask.cdap.templates.etl.batch.sinks.TimePartitionedFileSetDatasetAvroSink;
 import co.cask.cdap.templates.etl.batch.sources.StreamBatchSource;
 import co.cask.cdap.templates.etl.common.config.ETLStage;
+import co.cask.cdap.templates.etl.transforms.GenericTypeToAvroKeyTransform;
 import co.cask.cdap.templates.etl.transforms.StreamToStructuredRecordTransform;
 import co.cask.cdap.templates.etl.transforms.StructuredRecordToGenericRecordTransform;
 import co.cask.cdap.test.ApplicationManager;
@@ -117,15 +118,18 @@ public class ETLStreamConversionTest extends TestBase {
   private ETLBatchConfig constructETLBatchConfig(String fileSetName) {
     ETLStage source = new ETLStage(StreamBatchSource.class.getSimpleName(),
                                    ImmutableMap.of("streamName", "myStream", "frequency", "1m"));
-    ETLStage transform1 = new ETLStage(StreamToStructuredRecordTransform.class.getSimpleName(),
-                                       ImmutableMap.of("schemaType", Formats.CSV, "schema", bodySchema.toString()));
-    ETLStage transform2 = new ETLStage(StructuredRecordToGenericRecordTransform.class.getSimpleName(),
+    ETLStage streamToStructuredRecord = new ETLStage(StreamToStructuredRecordTransform.class.getSimpleName(),
+                                       ImmutableMap.of("format.name", Formats.CSV, "schema", bodySchema.toString()));
+    ETLStage structuredRecordToGeneric = new ETLStage(StructuredRecordToGenericRecordTransform.class.getSimpleName(),
+                                       ImmutableMap.<String, String>of());
+    ETLStage genericToAvro = new ETLStage(GenericTypeToAvroKeyTransform.class.getSimpleName(),
                                        ImmutableMap.<String, String>of());
     ETLStage sink = new ETLStage(TimePartitionedFileSetDatasetAvroSink.class.getSimpleName(),
                                  ImmutableMap.of("schema", eventSchema.toString(), "name", fileSetName));
     List<ETLStage> transformList = Lists.newArrayList();
-    transformList.add(transform1);
-    transformList.add(transform2);
+    transformList.add(streamToStructuredRecord);
+    transformList.add(structuredRecordToGeneric);
+    transformList.add(genericToAvro);
     return new ETLBatchConfig("", source, sink, transformList);
   }
 

@@ -30,6 +30,7 @@ import co.cask.cdap.templates.etl.batch.sources.StreamBatchSource;
 import co.cask.cdap.templates.etl.common.Constants;
 import co.cask.cdap.templates.etl.common.DefaultStageConfigurer;
 import co.cask.cdap.templates.etl.common.config.ETLStage;
+import co.cask.cdap.templates.etl.transforms.GenericTypeToAvroKeyTransform;
 import co.cask.cdap.templates.etl.transforms.IdentityTransform;
 import co.cask.cdap.templates.etl.transforms.StreamToStructuredRecordTransform;
 import co.cask.cdap.templates.etl.transforms.StructuredRecordToGenericRecordTransform;
@@ -60,6 +61,7 @@ public class ETLBatchTemplate extends ApplicationTemplate<ETLBatchConfig> {
     initTable(Lists.<Class>newArrayList(KVTableSource.class, KVTableSink.class, IdentityTransform.class,
                                         StreamBatchSource.class, StreamToStructuredRecordTransform.class,
                                         StructuredRecordToGenericRecordTransform.class,
+                                        GenericTypeToAvroKeyTransform.class,
                                         TimePartitionedFileSetDatasetAvroSink.class));
   }
 

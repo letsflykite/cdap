@@ -387,24 +387,27 @@ public class MetricsHandlerTestRun extends MetricsSuiteTestBase {
 
     QueryRequest query1 = new QueryRequest(getContextMap("namespace", "yourspace", "app", "WCount1", "flow", "WCounter",
                                                          "flowlet", "splitter"),
-                                           ImmutableList.of("system.reads"), ImmutableList.<String>of(),
-                                           ImmutableMap.of("aggregate", "true"));
+                                           ImmutableList.of("system.reads"), ImmutableList.<String>of());
+    query1.setTimeRange(0L, 0L, 1, Integer.MAX_VALUE, null);
 
     // empty time range should default to aggregate=true
     QueryRequest query2 = new QueryRequest(getContextMap("namespace", "yourspace", "app", "WCount1", "flow", "WCounter",
                                                          "flowlet", "counter"),
                                            ImmutableList.of("system.reads"),
-                                           ImmutableList.<String>of(), ImmutableMap.<String, String>of());
+                                           ImmutableList.<String>of());
+    query2.setTimeRange(0L, 0L, 1, Integer.MAX_VALUE, null);
 
     QueryRequest query3 = new QueryRequest(getContextMap("namespace", "yourspace", "app", "WCount1", "flow", "WCounter",
                                                          "flowlet", "*"),
                                            ImmutableList.of("system.reads"),
-                                           ImmutableList.<String>of(), ImmutableMap.of("aggregate", "true"));
+                                           ImmutableList.<String>of());
+    query3.setTimeRange(0L, 0L, 1, Integer.MAX_VALUE, null);
 
     QueryRequest query4 = new QueryRequest(ImmutableMap.of("namespace", "myspace", "app", "WordCount1", "flow",
                                                            "WordCounter", "flowlet", "splitter"),
                                            ImmutableList.of("system.reads", "system.writes"),
-                                           ImmutableList.<String>of(), ImmutableMap.of("aggregate", "true"));
+                                           ImmutableList.<String>of());
+    query4.setTimeRange(0L, 0L, 1, Integer.MAX_VALUE, null);
 
     // test batching of multiple queries
 
@@ -452,13 +455,13 @@ public class MetricsHandlerTestRun extends MetricsSuiteTestBase {
 
     QueryRequest query1 = new QueryRequest(getContextMap("namespace", "yourspace", "app", "WCount1",
                                                          "flow", "WCounter", "flowlet", "splitter"),
-                                           ImmutableList.of("system.reads"), ImmutableList.<String>of(),
-                                           ImmutableMap.of("start", String.valueOf(start), "end", String.valueOf(end)));
+                                           ImmutableList.of("system.reads"), ImmutableList.<String>of());
+    query1.setTimeRange(start, end, Integer.MAX_VALUE, 1, null);
 
     QueryRequest query2 = new QueryRequest(getContextMap("namespace", "yourspace", "app", "WCount1",
                                                          "flow", "WCounter"), ImmutableList.of("system.reads"),
-                                           ImmutableList.of("flowlet"),
-                                           ImmutableMap.of("start", String.valueOf(start), "end", String.valueOf(end)));
+                                           ImmutableList.of("flowlet"));
+    query2.setTimeRange(start, end, Integer.MAX_VALUE, 1, null);
 
     ImmutableMap<String, ImmutableList<QueryResult>> expected =
       ImmutableMap.of("timeRangeQuery1",
@@ -474,14 +477,6 @@ public class MetricsHandlerTestRun extends MetricsSuiteTestBase {
 
   @Test
   public void testMultipleMetricsSingleContext() throws Exception {
-    verifyAggregateQueryResult(
-      "/v3/metrics/query?tag=namespace:myspace&tag=app:WordCount1&tag=flow:WordCounter&tag=flowlet:splitter" +
-        "&metric=system.reads&aggregate=true", 2L);
-
-    verifyAggregateQueryResult(
-      "/v3/metrics/query?tag=namespace:myspace&tag=app:WordCount1&tag=flow:WordCounter&tag=flowlet:splitter" +
-        "&metric=system.reads&aggregate=true", 2L);
-
     verifyAggregateQueryResult(
       "/v3/metrics/query?tag=namespace:myspace&tag=app:WordCount1&tag=flow:WordCounter&tag=flowlet:splitter" +
         "&metric=system.reads&metric=system.writes&aggregate=true", ImmutableList.<Long>of(2L, 2L));
